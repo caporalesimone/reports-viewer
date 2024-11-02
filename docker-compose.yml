@@ -1,13 +1,12 @@
-version: '3.8'
-
 services:
   flask-server:
     build: .
+    container_name: reports-viewer
     ports:
-      - "80:5000"  # Mappa la porta 5000 del container alla porta 80 dell'host
+      - "80:5000"  # Maps port 5000 of the container to port 80 of the host
     volumes:
-      - ./uploads:/app/uploads  # Monta la cartella `uploads` esterna al container
-      - .:/app  # Monta il resto del progetto, ma senza includere `uploads`
+      - ./uploads:/app/uploads  # Mounts folder `uploads` ouside the container
+      - .:/app  # Mounts the current directory of the project
     environment:
       FLASK_ENV: production
-    restart: always
+    restart: always # Always restart the container if it stops

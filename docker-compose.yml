@@ -1,7 +1,7 @@
 services:
-  flask-server:
+  reports-viewer:
     build: .
-    container_name: reports-viewer
+    container_name: python-server
     ports:
       - "80:5000"  # Maps port 5000 of the container to port 80 of the host
     volumes:

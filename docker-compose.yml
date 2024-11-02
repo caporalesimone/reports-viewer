@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  flask-server:
+    build: .
+    ports:
+      - "80:5000"  # Mappa la porta 5000 del container alla porta 80 dell'host
+    volumes:
+      - ./uploads:/app/uploads  # Monta la cartella `uploads` esterna al container
+      - .:/app  # Monta il resto del progetto, ma senza includere `uploads`
+    environment:
+      FLASK_ENV: production
+    restart: always

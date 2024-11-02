@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Index</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+    <style>
+        .breadcrumb {
+            background-color: transparent;
+            padding: 0;
+            margin: 0;
+        }
+        .breadcrumb-item {
+            cursor: pointer;
+        }
+        .breadcrumb-item.active {
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Report Index</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb" id="breadcrumb">
+                <!-- Breadcrumbs dinamici generati qui -->
+            </ol>
+        </nav>
+        <div id="content">
+            <!-- Contenuto dinamico generato qui -->
+        </div>
+    </div>
+
+    <script>
+        // Stato attuale della navigazione
+        let currentPath = [];
+        let indexData = {};
+
+        // Funzione per caricare l'indice
+        async function loadIndex() {
+            const response = await fetch('/api/index');
+            indexData = await response.json();
+            renderContent(indexData);
+        }
+
+        // Funzione per renderizzare il breadcrumb e il contenuto
+        function renderBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            breadcrumb.innerHTML = '';
+
+            currentPath.forEach((segment, index) => {
+                const breadcrumbItem = document.createElement('li');
+                breadcrumbItem.className = 'breadcrumb-item';
+                if (index === currentPath.length - 1) {
+                    breadcrumbItem.classList.add('active');
+                    breadcrumbItem.textContent = segment.displayName;
+                } else {
+                    breadcrumbItem.textContent = segment.displayName;
+                    breadcrumbItem.onclick = () => {
+                        currentPath = currentPath.slice(0, index + 1);
+                        renderContent(getDataAtPath(currentPath));
+                    };
+                }
+                breadcrumb.appendChild(breadcrumbItem);
+            });
+        }
+
+        // Funzione per ottenere i dati corrispondenti al percorso corrente
+        function getDataAtPath(path) {
+            let data = indexData;
+            for (const segment of path) {
+                data = data[segment.key];
+            }
+            return data;
+        }
+
+        // Funzione per renderizzare il contenuto in base al livello corrente
+        function renderContent(data) {
+            const content = document.getElementById('content');
+            content.innerHTML = '';
+            renderBreadcrumb();
+
+            if (typeof data === 'string') {
+                // Mostra il link al report HTML
+                const link = document.createElement('a');
+                link.href = `/${data}`;
+                link.target = '_blank';
+                link.textContent = 'View Report';
+                content.appendChild(link);
+                return;
+            }
+
+            // Creazione di una lista di opzioni cliccabili
+            const listGroup = document.createElement('ul');
+            listGroup.className = 'list-group';
+
+            Object.keys(data).forEach(key => {
+                const item = document.createElement('li');
+                item.className = 'list-group-item list-group-item-action';
+                let displayName = key;
+
+                // Se l'elemento è un file (un link), lo aggiungiamo direttamente
+                if (typeof data[key] === 'string') {
+                    const link = document.createElement('a');
+                    link.href = `/${data[key]}`;
+                    link.target = '_blank';
+                    link.textContent = `${displayName} - Run report`;
+                    item.appendChild(link);
+                } else {
+                    item.textContent = displayName;
+                    item.onclick = () => {
+                        currentPath.push({ key: key, displayName: displayName });
+                        renderContent(data[key]);
+                    };
+                }
+
+                listGroup.appendChild(item);
+            });
+
+            content.appendChild(listGroup);
+        }
+
+        // Inizializzazione
+        loadIndex();
+    </script>
+</body>
+</html>

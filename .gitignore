@@ -164,4 +164,4 @@ cython_debug/
 # Custom ignore
 
 uploads/*
-!uploads/.gitignore
+

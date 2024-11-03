@@ -1,128 +1,141 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Index</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+    <title>Report Viewer</title>
     <style>
-        .breadcrumb {
-            background-color: transparent;
-            padding: 0;
+        body {
+            font-family: Arial, sans-serif;
             margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-        .breadcrumb-item {
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            margin-top: 20px;
+            border-bottom: 2px solid #ddd;
+            cursor: pointer;
+            justify-content: center;
+        }
+        .tab {
+            padding: 10px 20px;
+            margin-right: 5px;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            background-color: #e0e0e0;
+        }
+        .tab.active {
+            background-color: #5f9ea0;
+            color: #fff;
+        }
+        .tree-view {
+            margin-top: 20px;
+            padding: 0 20px;
+        }
+        .tree-item {
+            margin-left: 15px;
             cursor: pointer;
         }
-        .breadcrumb-item.active {
-            font-weight: bold;
+        .tree-item a {
+            text-decoration: none;
             color: #007bff;
+        }
+        .tree-item a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <h1>Report Index</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb" id="breadcrumb">
-                <!-- Dynamic breadcrumbs will be generated here -->
-            </ol>
-        </nav>
-        <div id="content">
-            <!-- Dynamic content will be generated here -->
-        </div>
-    </div>
+    <h1>Report Viewer</h1>
+    <div class="tabs" id="tabs"></div>
+    <div id="treeContainer"></div>
 
     <script>
-        // Current navigation state
-        let currentPath = [];
         let indexData = {};
 
-        // Function to load the index
         async function loadIndex() {
-            const response = await fetch('/api/index');
-            indexData = await response.json();
-            renderContent(indexData);
-        }
-
-        // Function to render the breadcrumb and content
-        function renderBreadcrumb() {
-            const breadcrumb = document.getElementById('breadcrumb');
-            breadcrumb.innerHTML = '';
-
-            currentPath.forEach((segment, index) => {
-                const breadcrumbItem = document.createElement('li');
-                breadcrumbItem.className = 'breadcrumb-item';
-                if (index === currentPath.length - 1) {
-                    breadcrumbItem.classList.add('active');
-                    breadcrumbItem.textContent = segment.displayName;
-                } else {
-                    breadcrumbItem.textContent = segment.displayName;
-                    breadcrumbItem.onclick = () => {
-                        currentPath = currentPath.slice(0, index + 1);
-                        renderContent(getDataAtPath(currentPath));
-                    };
-                }
-                breadcrumb.appendChild(breadcrumbItem);
-            });
-        }
-
-        // Function to get data corresponding to the current path
-        function getDataAtPath(path) {
-            let data = indexData;
-            for (const segment of path) {
-                data = data[segment.key];
+            try {
+                const response = await fetch('/api/index');
+                indexData = await response.json();
+                renderTabs(indexData);
+            } catch (error) {
+                console.error("Errore durante il caricamento dell'indice:", error);
             }
-            return data;
         }
 
-        // Function to render content based on the current level
-        function renderContent(data) {
-            const content = document.getElementById('content');
-            content.innerHTML = '';
-            renderBreadcrumb();
+        function renderTabs(data) {
+            const tabsContainer = document.getElementById('tabs');
+            tabsContainer.innerHTML = '';
+            
+            Object.keys(data).forEach((tag, index) => {
+                const tab = document.createElement('div');
+                tab.classList.add('tab');
+                if (index === 0) tab.classList.add('active');
+                tab.innerText = tag;
+                
+                tab.onclick = () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    renderTree(data[tag]);
+                };
 
-            if (typeof data === 'string') {
-                // Show the link to the HTML report
-                const link = document.createElement('a');
-                link.href = `/${data}`;
-                link.target = '_blank';
-                link.textContent = 'View Report';
-                content.appendChild(link);
-                return;
-            }
-
-            // Create a clickable options list
-            const listGroup = document.createElement('ul');
-            listGroup.className = 'list-group';
-
-            Object.keys(data).forEach(key => {
-                const item = document.createElement('li');
-                item.className = 'list-group-item list-group-item-action';
-                let displayName = key;
-
-                // If the element is a file (a link), add it directly
-                if (typeof data[key] === 'string') {
-                    const link = document.createElement('a');
-                    link.href = `/${data[key]}`;
-                    link.target = '_blank';
-                    link.textContent = `${displayName} - Run report`;
-                    item.appendChild(link);
-                } else {
-                    item.textContent = displayName;
-                    item.onclick = () => {
-                        currentPath.push({ key: key, displayName: displayName });
-                        renderContent(data[key]);
-                    };
-                }
-
-                listGroup.appendChild(item);
+                tabsContainer.appendChild(tab);
             });
 
-            content.appendChild(listGroup);
+            renderTree(Object.values(data)[0]);
         }
 
-        // Initialization
+        function createTree(obj, level = 0) {
+    const container = document.createElement('div');
+    container.classList.add('tree-view');
+
+    Object.keys(obj).forEach(key => {
+        const item = document.createElement('div');
+        item.classList.add('tree-item');
+
+        if (typeof obj[key] === 'string') {
+            const link = document.createElement('a');
+            link.href = obj[key];
+            link.target = '_blank';
+            link.innerText = key;
+            item.appendChild(link);
+        } else {
+            item.innerHTML = `<strong>${key}</strong>`;
+            const childrenContainer = createTree(obj[key], level + 1);
+
+            // Espande automaticamente solo il livello "Anno" (livello 0)
+            if (level === 0) {
+                childrenContainer.style.display = 'block';
+            } else {
+                childrenContainer.style.display = 'none';
+                item.onclick = (event) => {
+                    event.stopPropagation();
+                    childrenContainer.style.display = 
+                        childrenContainer.style.display === 'none' ? 'block' : 'none';
+                };
+            }
+
+            item.appendChild(childrenContainer);
+        }
+
+        container.appendChild(item);
+    });
+
+    return container;
+}
+
+
+        function renderTree(treeData) {
+            const treeContainer = document.getElementById('treeContainer');
+            treeContainer.innerHTML = '';
+            treeContainer.appendChild(createTree(treeData));
+        }
+
         loadIndex();
     </script>
 </body>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,135 +7,206 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
         }
+        
         h1 {
-            color: #333;
             text-align: center;
+            color: #333;
+            margin-bottom: 20px;
         }
-        .tabs {
+
+        #tab-container {
             display: flex;
-            margin-top: 20px;
-            border-bottom: 2px solid #ddd;
-            cursor: pointer;
-            justify-content: center;
+            flex-direction: row;
+            gap: 10px;
+            margin-bottom: 20px;
         }
+
         .tab {
-            padding: 10px 20px;
-            margin-right: 5px;
-            border: 1px solid #ddd;
-            border-bottom: none;
-            background-color: #e0e0e0;
-        }
-        .tab.active {
-            background-color: #5f9ea0;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            background-color: #007bff;
             color: #fff;
+            font-weight: bold;
         }
+
+        .tab.active {
+            background-color: #0056b3;
+        }
+
         .tree-view {
-            margin-top: 20px;
-            padding: 0 20px;
+            padding-left: 20px;
+            position: relative;
         }
+
         .tree-item {
-            margin-left: 15px;
+            margin-left: 20px;
+            position: relative;
             cursor: pointer;
         }
-        .tree-item a {
-            text-decoration: none;
-            color: #007bff;
+
+        .tree-item:before, .tree-item:after {
+            content: '';
+            position: absolute;
+            left: -20px;
         }
+
+        .tree-item:before {
+            border-left: 1px solid #ccc;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+        }
+
+        .tree-item:after {
+            border-top: 1px solid #ccc;
+            top: 15px;
+            width: 20px;
+        }
+
+        .tree-item:last-child:before {
+            bottom: 15px;
+        }
+
+        .tree-item strong {
+            display: inline-block;
+            padding: 5px;
+            color: #333;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .tree-item a {
+            display: inline-block;
+            color: #007bff;
+            text-decoration: none;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
         .tree-item a:hover {
             text-decoration: underline;
+            background-color: #e0e0e0;
+        }
+
+        .tree-item-collapsed > strong::after {
+            content: '▸';
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .tree-item-expanded > strong::after {
+            content: '▾';
+            margin-left: 5px;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <h1>Report Viewer</h1>
-    <div class="tabs" id="tabs"></div>
-    <div id="treeContainer"></div>
+    
+    <div id="tab-container"></div>
+    <div id="tree-container"></div>
 
     <script>
         let indexData = {};
 
+        // Carica i dati dall'API e popola le tab
         async function loadIndex() {
             try {
                 const response = await fetch('/api/index');
                 indexData = await response.json();
                 renderTabs(indexData);
             } catch (error) {
-                console.error("Errore durante il caricamento dell'indice:", error);
+                console.error('Errore durante il caricamento dei dati:', error);
             }
         }
 
+        // Crea e visualizza le tab per ogni root dell'albero
         function renderTabs(data) {
-            const tabsContainer = document.getElementById('tabs');
-            tabsContainer.innerHTML = '';
-            
+            const tabContainer = document.getElementById('tab-container');
+            tabContainer.innerHTML = '';
+
             Object.keys(data).forEach((tag, index) => {
                 const tab = document.createElement('div');
                 tab.classList.add('tab');
                 if (index === 0) tab.classList.add('active');
                 tab.innerText = tag;
-                
                 tab.onclick = () => {
                     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
-                    renderTree(data[tag]);
+                    renderTree(tag);
                 };
-
-                tabsContainer.appendChild(tab);
+                tabContainer.appendChild(tab);
             });
 
-            renderTree(Object.values(data)[0]);
+            renderTree(Object.keys(data)[0]); // Mostra il primo tab di default
         }
 
-        function createTree(obj, level = 0) {
-    const container = document.createElement('div');
-    container.classList.add('tree-view');
-
-    Object.keys(obj).forEach(key => {
-        const item = document.createElement('div');
-        item.classList.add('tree-item');
-
-        if (typeof obj[key] === 'string') {
-            const link = document.createElement('a');
-            link.href = obj[key];
-            link.target = '_blank';
-            link.innerText = key;
-            item.appendChild(link);
-        } else {
-            item.innerHTML = `<strong>${key}</strong>`;
-            const childrenContainer = createTree(obj[key], level + 1);
-
-            // Espande automaticamente solo il livello "Anno" (livello 0)
-            if (level === 0) {
-                childrenContainer.style.display = 'block';
-            } else {
-                childrenContainer.style.display = 'none';
-                item.onclick = (event) => {
-                    event.stopPropagation();
-                    childrenContainer.style.display = 
-                        childrenContainer.style.display === 'none' ? 'block' : 'none';
-                };
-            }
-
-            item.appendChild(childrenContainer);
-        }
-
-        container.appendChild(item);
-    });
-
-    return container;
-}
-
-
-        function renderTree(treeData) {
-            const treeContainer = document.getElementById('treeContainer');
+        // Crea l'albero di navigazione
+        function renderTree(tag) {
+            const treeContainer = document.getElementById('tree-container');
             treeContainer.innerHTML = '';
-            treeContainer.appendChild(createTree(treeData));
+            treeContainer.appendChild(createTree(indexData[tag]));
         }
 
+        // Funzione per creare la struttura ad albero
+        function createTree(obj, level = 0) {
+            const container = document.createElement('div');
+            container.classList.add('tree-view');
+
+            Object.keys(obj).forEach(key => {
+                const item = document.createElement('div');
+                item.classList.add('tree-item');
+
+                if (typeof obj[key] === 'string') {
+                    const link = document.createElement('a');
+                    link.href = obj[key];
+                    link.target = '_blank';
+                    link.innerText = key;
+                    item.appendChild(link);
+                } else {
+                    const label = document.createElement('strong');
+                    label.innerText = key;
+                    item.appendChild(label);
+
+                    const childrenContainer = createTree(obj[key], level + 1);
+
+                    // Mostra solo i nodi Anno (livello 0) espansi di default
+                    if (level === 0) {
+                        childrenContainer.style.display = 'block';
+                        item.classList.add('tree-item-expanded');
+                    } else {
+                        childrenContainer.style.display = 'none';
+                        item.classList.add('tree-item-collapsed');
+                    }
+
+                    label.onclick = (event) => {
+                        event.stopPropagation();
+                        const isVisible = childrenContainer.style.display === 'block';
+                        childrenContainer.style.display = isVisible ? 'none' : 'block';
+                        item.classList.toggle('tree-item-expanded', !isVisible);
+                        item.classList.toggle('tree-item-collapsed', isVisible);
+                    };
+
+                    item.appendChild(childrenContainer);
+                }
+
+                container.appendChild(item);
+            });
+
+            return container;
+        }
+
+        // Carica i dati all'avvio della pagina
         loadIndex();
     </script>
 </body>

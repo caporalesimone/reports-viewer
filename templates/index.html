@@ -14,7 +14,7 @@
             padding: 20px;
             background-color: #f8f9fa;
         }
-        
+
         h1 {
             text-align: center;
             color: #333;
@@ -41,9 +41,15 @@
             background-color: #0056b3;
         }
 
-        .tree-view {
-            padding-left: 20px;
-            position: relative;
+        .tree-view-container {
+            max-width: 600px; /* Dimensione fissa del contenitore */
+            width: 100%;
+            padding-left: 20px; /* Padding per l'allineamento a sinistra */
+            border: 1px solid #ccc; /* Bordo del contenitore */
+            background-color: #fff; /* Sfondo bianco */
+            border-radius: 5px; /* Angoli arrotondati */
+            overflow-x: auto; /* Scorrimento orizzontale se necessario */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Ombra per il contenitore */
         }
 
         .tree-item {
@@ -114,7 +120,7 @@
     <h1>Report Viewer</h1>
     
     <div id="tab-container"></div>
-    <div id="tree-container"></div>
+    <div class="tree-view-container" id="tree-container"></div>
 
     <script>
         let indexData = {};

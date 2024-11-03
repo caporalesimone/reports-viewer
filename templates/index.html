@@ -24,18 +24,22 @@
         #tab-container {
             display: flex;
             flex-direction: row;
-            gap: 10px;
+            flex-wrap: wrap; /* Permette ai tab di andare a capo */
             margin-bottom: 20px;
         }
 
         .tab {
-            padding: 10px 15px;
-            cursor: pointer;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: #fff;
-            font-weight: bold;
-        }
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    font-weight: bold;
+    flex: 1 1 auto; /* Permette ai tab di adattarsi */
+    min-width: 100px; /* Imposta una larghezza minima per ogni tab */
+    text-align: center; /* Allinea il testo al centro */
+    margin: 5px; /* Aggiunge un margine tra le tab */
+}
 
         .tab.active {
             background-color: #0056b3;
